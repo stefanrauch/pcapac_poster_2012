@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<root_rights 
+  xsi:noNamespaceSchemaLocation="http://www. ... right.xsd"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  ...
+	<RIGHT>
+		<user group="controls">
+			<admin>
+				<device>DEV*</device>
+				<eqmodel>EQ*</eqmodel>
+			</admin>
+		</user>
+		<user name="Smith">
+			<modify>
+				<eqmodel>MX</eqmodel>
+			</modify>
+      <system>
+        <device>DEV007</device>
+        <device access="denied">DEV008</device>
+      </system>
+		</user>
+  </RIGHT>
+  ...
+ </root_rights>
