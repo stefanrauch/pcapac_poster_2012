@@ -9,6 +9,7 @@
 \usepackage{graphicx,color,multicol,booktabs,listings,fancybox,calc}
 \usepackage{capt-of}
 \usepackage{subfigure}
+\usepackage{tabularx}
 %\raggedcolumns
 \flushcolumns
 
@@ -137,9 +138,6 @@ to determine which approach is appropriate for the required actions.
 %\vfill
 
 \section{Introduction}
-\begin{itemize}
-	\item 2x EIA-232
-\end{itemize}
 In the FAIR control system,
 a data master issues high-level commands to control accelerator devices.
 The front-end controllers in the system react to relevant commands,
@@ -158,7 +156,6 @@ then this places two constraints on the system.
 Firstly, the data master must issue commands at least 110$\mu$s ahead of time.
 Secondly, the system must be able to tolerate that the action could be as
 much as 10$\mu$s too early or too late.
-
 
 Issuing commands too far in advance reduces the responsiveness of the system.
 Once the data master has issued a command, it cannot be aborted.
@@ -186,17 +183,76 @@ components in FAIR and explorers the alternatives which could meet them.
 \includegraphics[width=\columnwidth]{../images/WEPD48f2}
 \captionof{figure}{Block diagram of SCU}
 
+\section{Use Cases}
+\begin{itemize}
+	\item main frontend controller for the FAIR project
+        \item different slaves for different use cases
+        \begin{itemize} 
+	  \item Adaptive Control Units (ACU) for power supplies
+          \item FPGA Interface Board (FIB) for Radio Frequency (RF) control
+          \item Kicker modules controlled by IFK via MIL-STD-1553 based field bus
+        \end{itemize}
+\end{itemize}
+
+\section{Scalable Control Unit (SCU)}
+\begin{itemize}
+  \item stack of up to three seperated boards
+  \item base board with Arria II FPGA, 2 SFP slots, DDR3 RAM, parallel flash, SCU bus
+  \item White Rabbit circuitry
+  \item COMExpress module with Intel Atom CPU, connected via PCIe
+  \item optional extension board for MIL-STd-1553 based field bus
+  \item SCU receives 1ns accurate timing information via White Rabbit link
+\end{itemize}
+
+\section{Execution Alternatives}
+When the SCU has an action to perform at a particular time,
+it has many alternative execution paths.
+Each option carries a trade-off between timing fidelity and
+the expressiveness of the program which performs the action.
+
+\begin{itemize}
+  \item FPGA
+    \begin{itemize}
+      \item can be programmed to generate output on 8ns phase aligned clock edge
+      \item with fine delay card down to 1ns
+      \item only source of jitter is PLL of the FPGA and inherent inaccuracy of White Rabbit
+    \end{itemize}
+  \item LM32
+    \begin{itemize}
+      \item FPGA triggers soft-CPU via interrupt
+      \item software generates appropiate action
+      \item delay from switch time to interrupt context and running the software
+      \item jitter from cache behaviour and on-chip bus access
+    \end{itemize}
+  \item Atom-Kernel
+    \begin{itemize}
+      \item FPGA interrupt directly handeled in kernel
+      \item delays equal to LM32 + PCIe bdrige delay
+      \item more jitter caused by linux kernel
+    \end{itemize}
+  \item Atom-Userspace
+    \begin{itemize}
+      \item FPGA interrupt delivered to userspace
+      \item adds delay by context switch 
+    \end{itemize}
+  \item FESA
+    \begin{itemize}
+      \item interrupt is translated to an action using threads
+      \item this increases number of context switches
+    \end{itemize}
+\end{itemize}
+
 \includegraphics[width=\columnwidth]{../images/WEPD48f1}
 \captionof{figure}{Comparison of delay distributions}
 
 \includegraphics[width=\columnwidth]{../images/lm32plot}
 \captionof{figure}{LM32 delay distribution}
 
-\includegraphics[width=\columnwidth]{../images/fesa_plot}
-\captionof{figure}{FESA delay distribition}
+%\includegraphics[width=\columnwidth]{../images/fesa_plot}
+%\captionof{figure}{FESA delay distribition}
 
 %\begin{figure}[t]
-%   \centering
+   \centering
    \begin{tabular}{l|c|c|c|c}
      $\mu$s    & min   & mean  & max   & stddev \\
      \hline
@@ -234,25 +290,6 @@ components in FAIR and explorers the alternatives which could meet them.
 
 %\includegraphics[width=0.49\columnwidth]{../images/WEPMN018f2}
 %\captionof{figure}{Layout of the SCU Carrier Board}
-\section{Problems during design phase}
-\begin{itemize}
-	\item fitting of high speed serial transceivers
-	\item timing issues with DDR3 memory controller
-\end{itemize}
-
-\section{Lessons Learned}
-\begin{itemize}
-	\item plan a lot more time for testing new technologies
-	\item most changes cannot be made after PCB is finished
-\end{itemize}
-
-
-\section{In Detail: Implementing a LPC UART}
-\begin{itemize}
-	\item Problem: SuperIO Chip does not fit in Layout
-	\item Solution: extending LPC bus to FPGA, implementing UART functionality in logic
-\end{itemize}
-
 
 \section{Conclusion}
 The measured times as presented in Figure ~\ref{tab:stat_table}
