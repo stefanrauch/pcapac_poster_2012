@@ -1,9 +1,9 @@
 \documentclass[25pt,halfparskip-,pagesize]{scrartcl}
 \usepackage[papersize={34in,44in},body={780mm,1000mm},top=.5in,ignoreheadfoot]{geometry}
 \usepackage{eso-pic}
-%\usepackage{bera}
-%\usepackage{fourier}
-%\usepackage[scaled]{luximono}
+\usepackage{bera}
+\usepackage{fourier}
+\usepackage[scaled]{luximono}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
 \usepackage{graphicx,color,multicol,booktabs,listings,fancybox,calc}
@@ -28,7 +28,7 @@
     \AtPageLowerLeft{\kern\paperwidth\kern-.3cm\rule[.1cm]{.2cm}{.4pt}}
     \linewidth2pt
     \AtPageLowerLeft{\kern1in\kern\oddsidemargin\lower-3cm\hbox to \textwidth{\leaders \hrule height \linewidth \hfill \kern 1cm\lower.5cm\hbox{\includegraphics[height=2cm]{../images/GSI_Logo_cmyk.eps}}\kern1cm\rule{3cm}{\linewidth}}}
-    \AtPageLowerLeft{\kern1in\kern\oddsidemargin\lower-2cm\hbox{\sffamily\fontsize{12pt}{12pt}\selectfont ICALEPCS\,2011}}
+    \AtPageLowerLeft{\kern1in\kern\oddsidemargin\lower-2cm\hbox{\sffamily\fontsize{12pt}{12pt}\selectfont PCaPAC\,2012}}
 }
 
 \def\TTra{\textsuperscript{\texttrademark}}
@@ -85,15 +85,15 @@
 {\centering
 \begin{minipage}{20in}
 \centering \sffamily\Huge \rule{0pt}{50pt}\textbf{Facility-Wide Synchronization of Standard FAIR Equipment Controllers}\par
-\vspace{5mm} \LARGE S. Rauch,
-W. Terpstra,
-W. Panschow,
-M. Thieme,
-C. Prados,
-M. Zweig,
-M. Kreider,
-D. Beck,
-R. B\"ar
+\vspace{5mm} \LARGE Stefan Rauch,
+Wesley Terpstra,
+Wolfgang Panschow,
+Matthias Thieme,
+Cesar Prados,
+Marcus Zweig,
+Mathias Kreider,
+Dietrich Beck,
+Ralph B\"ar
 \par
 \vspace{5mm}
 \Large GSI, D-64291 Darmstadt, Germany
@@ -101,7 +101,8 @@ R. B\"ar
 \end{minipage}%
 \par}%
 
-\vspace{11cm}
+%\vspace{11cm}
+\vspace{6.5cm}
 \setlength{\fboxrule}{1pt}
 \begin{multicols*}{3}
 \ovalbox{%
@@ -132,45 +133,30 @@ to determine which approach is appropriate for the required actions.
 \par
 \end{minipage}}
 
-
-
-%\par
-%\vfill
-
 \section{Introduction}
 In the FAIR control system,
 a data master issues high-level commands to control accelerator devices.
-The front-end controllers in the system react to relevant commands,
+The front-end controllers in the system reacts to relevant commands,
 issuing appropriate actions to their hardware components.
-Depending on the action to be taken,
-there are different timing requirements to be met.
+Depending on the action to be taken, there are different timing requirements to be met.
 
 \begin{itemize}
-  \item commands carry absolute execution timstamp
+  \item commands carry absolute execution timestamp
   \item time limit for frond-end controllers for receiving commands
   \item depending on the time for processing an action
-  \item compromiss between responsivness and planning ahead
+  \item tradeoff between responsivness and planning ahead
 \end{itemize}
-
 
 Non-deterministic execution time is a potentially much more serious problem.
 For example, if a kicker executes an action a few nanoseconds too late,
 the beam might be lost.
 However, not all actions require the same precision,
 and it may make sense to trade accuracy for flexibility in some situations.
-
 Fortunately, the  most common equipment controller in FAIR,
 the Scalable Control Unit (SCU),
 has several possibilities for executing actions.
 This paper outlines the timing requirements of various accelerator
 components in FAIR and explorers the alternatives which could meet them.
-
-
-
-
-\includegraphics[width=\columnwidth]{../images/WEPD48f2}
-\label{fig:block_diagram}
-\captionof{figure}{Block diagram of SCU}
 
 \section{Use Cases}
 \begin{itemize}
@@ -183,22 +169,38 @@ components in FAIR and explorers the alternatives which could meet them.
         \end{itemize}
 \end{itemize}
 
+\includegraphics[width=\columnwidth]{../images/WEPD48f2}
+\captionof{figure}{Block diagram of SCU}
+\label{fig:block_diagram}
+
+
+
 \section{Scalable Control Unit (SCU)}
 \begin{itemize}
-  \item stack of up to three seperated boards
+  \item stack of up to three separated boards
   \item base board with Arria II FPGA, 2 SFP slots, DDR3 RAM, parallel flash, SCU bus
-  \item White Rabbit circuitry
+  \item White Rabbit Timing circuitry
   \item COMExpress module with Intel Atom CPU, connected via PCIe
   \item optional extension board for MIL-STD-1553 based field bus
   \item SCU receives 1ns accurate timing information via White Rabbit link
 \end{itemize}
 
-\section{Execution Alternatives}
-When the SCU has an action to perform at a particular time,
-it has many alternative execution paths.
-Each option carries a trade-off between timing fidelity and
-the expressiveness of the program which performs the action.
+\begin{center}
+  \begin{tabular}{l|c|c|c|c}
 
+   $\mu$s    & min   & mean  & max   & stddev \\
+   \hline
+    FPGA      & 0 & 0.001 & 0.001 & 0.001 \\
+    LM32      & 2.863 & 2.924 & 3.217 & 0.058  \\
+    Kernel    & 7.120 & 13.29 & 37.73 & 3.49   \\
+    Userspace & 49.36 & 62.49 & 93.33 & 5.62   \\
+    FESA      & 138.9 & 170.1 & 246.1 & 10.8 \\
+   \end{tabular}
+  \caption{Execution timing performance}
+\label{tab:stat_table}
+\end{center}
+
+\section{Execution Alternatives}
 \begin{itemize}
   \item FPGA
     \begin{itemize}
@@ -209,15 +211,15 @@ the expressiveness of the program which performs the action.
   \item LM32
     \begin{itemize}
       \item FPGA triggers soft-CPU via interrupt
-      \item software generates appropiate action
+      \item software generates appropriate action
       \item delay from switch time to interrupt context and running the software
       \item jitter from cache behaviour and on-chip bus access
     \end{itemize}
   \item Atom-Kernel
     \begin{itemize}
-      \item FPGA interrupt directly handeled in kernel
-      \item delays equal to LM32 + PCIe bdrige delay
-      \item more jitter caused by linux kernel
+      \item FPGA interrupt directly handled in kernel
+      \item delays equal to LM32 + PCIe bridge delay
+      \item more jitter caused by Linux kernel
     \end{itemize}
   \item Atom-Userspace
     \begin{itemize}
@@ -232,26 +234,28 @@ the expressiveness of the program which performs the action.
 \end{itemize}
 
 \includegraphics[width=\columnwidth]{../images/WEPD48f1}
-\label{fig:delaycomparison}
 \captionof{figure}{Comparison of delay distributions}
+\label{fig:delaycomparison}
+
+\columnbreak
 
 \section{Analysis}
 The outputs of an SCU were connected to an oscilloscope.
 First output is the action aligned to FPGA's 8ns clock.
-Second ouput is toggled by execution path. The approach
+Second output is toggled by execution path. The approach
 ignores FPGA execution time.
 All test were done with background load and with at least
 10000 samples. Load for LM32 was White Rabbit PTP core and
 save/restore of all 32 registers on interrupt context switch.
 The Atom was streaming text over ssh.
 Test were done with real-time patched 2.6.33.6 Linux kernel.
-The PCIe bridge interrupt handler and tasklet processs were
+The PCIe bridge interrupt handler and tasklet process were
 set to priority 99, the userspace test program to 98. FESA
 set its own priority to 60.
-We also measured th LM32 without instruction cache. This reduced
+We also measured the LM32 without instruction cache. This reduced
 the variability from 354ns to 272ns. Average delay was increased
 from 2.924$\mu$s to 3.810$\mu$s. Most of the variability seems
-to stem from Wihsbone operations.
+to stem from Wishbone operations.
 The LM32 was clocked at 62.5Mhz and when zoomed into the plot
 around 3$\mu$s you can see a distribution of 22 spikes with 16ns
 intervals (Figure ~\ref{fig:lm32plot}).
@@ -260,22 +264,8 @@ from interrupt handler to userspace varies significantly.
 With 10000 samples the worst case delay was 240$\mu$s for FESA.
 
 \includegraphics[width=\columnwidth]{../images/lm32plot}
-\label{fig:lm32plot}
 \captionof{figure}{LM32 delay distribution}
-
-\centering
-  \begin{tabular}{l|c|c|c|c}
-   $\mu$s    & min   & mean  & max   & stddev \\
-   \hline
-    FPGA      & 0 & 0.001 & 0.001 & 0.001 \\
-    LM32      & 2.863 & 2.924 & 3.217 & 0.058  \\
-    Kernel    & 7.120 & 13.29 & 37.73 & 3.49   \\
-    Userspace & 49.36 & 62.49 & 93.33 & 5.62   \\
-    FESA      & 138.9 & 170.1 & 246.1 & 10.8 \\
-   \end{tabular}
-  \caption{Execution timing performance}
-\label{tab:stat_table}
-
+\label{fig:lm32plot}
 
 \section{Conclusion}
 The measured times as presented in Figure ~\ref{tab:stat_table}
@@ -286,8 +276,7 @@ SIS18 and the SIS100. Another example is the control of kicker magnets,
 which requires  at least 3ns precision and can only be done with FPGA
 Hardware Description Language (HDL). Software on the COM Express module
 may only be used for cases, where hard real-time is not required.
-As can be seen from the differences of mininum and maximum values, none
-of the solutions involving the CPU on the COM Express module fulfill
+None of the solutions involving the CPU on the COM Express module fulfill
 those requirements, as long as the use of real-time Linux as operating
 systems is a stringent requirement for software tools like FESA.
 
@@ -295,7 +284,7 @@ For hard real-time the options are FPGA HDL or LM32 software. Here, FPGA
 HDL provides nanoseconds timing while LM32 software provides a better
 flexibility. To avoid stringent limitations for future developments of
 the FAIR accelerator complex, standard FAIR equipment controllers like
-the SCU should be designed supporting hard real-time on the nanoseconds
+the SCU should be designed to support hard real-time on the nanoseconds
 scale. If flexibility during runtime is required, the ideal solution
 could be a combination of both options, where LM32 software creates the
 action patterns that are phase aligned with high precision by FPGA HDL.
