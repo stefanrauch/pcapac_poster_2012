@@ -145,26 +145,13 @@ issuing appropriate actions to their hardware components.
 Depending on the action to be taken,
 there are different timing requirements to be met.
 
-Unlike the control system currently deployed at GSI,
-commands issued by the data master carry an absolute execution timestamp.
-The front-end controllers must receive commands early enough
-that they can schedule their actions
-to achieve the desired result at the correct time.
-Unfortunately, executing actions takes a variable amount of time.
-If the action takes 90-110$\mu$s to execute,
-then this places two constraints on the system.
-Firstly, the data master must issue commands at least 110$\mu$s ahead of time.
-Secondly, the system must be able to tolerate that the action could be as
-much as 10$\mu$s too early or too late.
+\begin{itemize}
+  \item commands carry absolute execution timstamp
+  \item time limit for frond-end controllers for receiving commands
+  \item depending on the time for processing an action
+  \item compromiss between responsivness and planning ahead
+\end{itemize}
 
-Issuing commands too far in advance reduces the responsiveness of the system.
-Once the data master has issued a command, it cannot be aborted.
-If the situation changes,
-perhaps due to interlock or contention from another beam user,
-the system cannot react faster than the slowest action already executing.
-This neglects, of course, other sources of latency in the system,
-such as network propagation delay, which only exacerbate the problem.
-It is thus generally desirable to have fast action execution.
 
 Non-deterministic execution time is a potentially much more serious problem.
 For example, if a kicker executes an action a few nanoseconds too late,
@@ -180,7 +167,9 @@ components in FAIR and explorers the alternatives which could meet them.
 
 
 
+
 \includegraphics[width=\columnwidth]{../images/WEPD48f2}
+\label{fig:block_diagram}
 \captionof{figure}{Block diagram of SCU}
 
 \section{Use Cases}
@@ -200,7 +189,7 @@ components in FAIR and explorers the alternatives which could meet them.
   \item base board with Arria II FPGA, 2 SFP slots, DDR3 RAM, parallel flash, SCU bus
   \item White Rabbit circuitry
   \item COMExpress module with Intel Atom CPU, connected via PCIe
-  \item optional extension board for MIL-STd-1553 based field bus
+  \item optional extension board for MIL-STD-1553 based field bus
   \item SCU receives 1ns accurate timing information via White Rabbit link
 \end{itemize}
 
@@ -243,53 +232,50 @@ the expressiveness of the program which performs the action.
 \end{itemize}
 
 \includegraphics[width=\columnwidth]{../images/WEPD48f1}
+\label{fig:delaycomparison}
 \captionof{figure}{Comparison of delay distributions}
 
+\section{Analysis}
+The outputs of an SCU were connected to an oscilloscope.
+First output is the action aligned to FPGA's 8ns clock.
+Second ouput is toggled by execution path. The approach
+ignores FPGA execution time.
+All test were done with background load and with at least
+10000 samples. Load for LM32 was White Rabbit PTP core and
+save/restore of all 32 registers on interrupt context switch.
+The Atom was streaming text over ssh.
+Test were done with real-time patched 2.6.33.6 Linux kernel.
+The PCIe bridge interrupt handler and tasklet processs were
+set to priority 99, the userspace test program to 98. FESA
+set its own priority to 60.
+We also measured th LM32 without instruction cache. This reduced
+the variability from 354ns to 272ns. Average delay was increased
+from 2.924$\mu$s to 3.810$\mu$s. Most of the variability seems
+to stem from Wihsbone operations.
+The LM32 was clocked at 62.5Mhz and when zoomed into the plot
+around 3$\mu$s you can see a distribution of 22 spikes with 16ns
+intervals (Figure ~\ref{fig:lm32plot}).
+The time from interrupt to the handler in Linux and the time
+from interrupt handler to userspace varies significantly.
+With 10000 samples the worst case delay was 240$\mu$s for FESA.
+
 \includegraphics[width=\columnwidth]{../images/lm32plot}
+\label{fig:lm32plot}
 \captionof{figure}{LM32 delay distribution}
 
-%\includegraphics[width=\columnwidth]{../images/fesa_plot}
-%\captionof{figure}{FESA delay distribition}
-
-%\begin{figure}[t]
-   \centering
-   \begin{tabular}{l|c|c|c|c}
-     $\mu$s    & min   & mean  & max   & stddev \\
-     \hline
-     FPGA      & 0 & 0.001 & 0.001 & 0.001 \\
-     LM32      & 2.863 & 2.924 & 3.217 & 0.058  \\
-     Kernel    & 7.120 & 13.29 & 37.73 & 3.49   \\
-     Userspace & 49.36 & 62.49 & 93.33 & 5.62   \\
-     FESA      & 138.9 & 170.1 & 246.1 & 10.8 \\
+\centering
+  \begin{tabular}{l|c|c|c|c}
+   $\mu$s    & min   & mean  & max   & stddev \\
+   \hline
+    FPGA      & 0 & 0.001 & 0.001 & 0.001 \\
+    LM32      & 2.863 & 2.924 & 3.217 & 0.058  \\
+    Kernel    & 7.120 & 13.29 & 37.73 & 3.49   \\
+    Userspace & 49.36 & 62.49 & 93.33 & 5.62   \\
+    FESA      & 138.9 & 170.1 & 246.1 & 10.8 \\
    \end{tabular}
-   \caption{Execution timing performance}
-  \label{tab:stat_table}
-%\end{figure}
+  \caption{Execution timing performance}
+\label{tab:stat_table}
 
-
-
-%\begin{figure}
-%\subfigure[Bildunterschrift]{\includegraphics[width=0.49\columnwidth]{../images/WEPMN018f2}}\hfill
-%\subfigure[Bildunterschrift]{\includegraphics[width=0.49\columnwidth]{../images/WEPMN018f3}}
-%\caption{Gesamtbild-Unterschrift}
-%\end{figure}
-
-%\begin{minipage}[hbt]{0.5\columnwidth}
-%	\centering
-%	\includegraphics[width=0.49\columnwidth]{../images/WEPMN018f2}
-%	\caption{Carrier Board Layout}
-%	\label{Bild2}
-%\end{minipage}
-%\hfill
-%\begin{minipage}[hbt]{0.49\columnwidth}
-%	\centering
-%	\includegraphics[width=0.49\columnwidth]{../images/WEPMN018f3}
-%	\caption{Front Panel}
-%	\label{Bild3}
-%\end{minipage}
-
-%\includegraphics[width=0.49\columnwidth]{../images/WEPMN018f2}
-%\captionof{figure}{Layout of the SCU Carrier Board}
 
 \section{Conclusion}
 The measured times as presented in Figure ~\ref{tab:stat_table}
